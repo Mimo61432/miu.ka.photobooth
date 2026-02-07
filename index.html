@@ -1,0 +1,38 @@
+<!DOCTYPE html>
+<html lang="en">
+<head>
+  <meta charset="UTF-8">
+  <title>Our Sketchbook</title>
+  <link rel="stylesheet" href="style.css">
+</head>
+<body>
+
+<script>
+  const pass = prompt("Enter our password:");
+  if (pass !== "love123") {
+    document.body.innerHTML = "💔 Wrong password";
+  }
+</script>
+
+<div class="paper">
+  <h1>💛 Our Sketchbook</h1>
+  <p class="subtitle">Just us. Little notes, doodles, memories.</p>
+
+  <section>
+    <h2>✏️ Notes</h2>
+    <p>This is where little thoughts go.</p>
+  </section>
+
+  <section>
+    <h2>📸 Memories</h2>
+    <img src="https://placehold.co/300x200" alt="memory">
+  </section>
+
+  <section>
+    <h2>🖍️ Doodles</h2>
+    <p>Hand-drawn chaos lives here.</p>
+  </section>
+</div>
+
+</body>
+</html>

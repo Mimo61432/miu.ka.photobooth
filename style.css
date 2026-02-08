@@ -1,35 +1,38 @@
+@import url('https://fonts.googleapis.com/css2?family=Patrick+Hand&display=swap');
+
 body {
-  font-family: sans-serif;
-  background: #faf7f2;
+  margin: 0;
+  min-height: 100vh;
+  font-family: 'Patrick Hand', cursive;
+  background-color: #faf7f2;
+  background-image: url("https://www.transparenttextures.com/patterns/sketch.png");
+}
+
+.paper {
+  max-width: 700px;
+  margin: 40px auto;
+  padding: 30px;
+  background: #fffef9;
+  border: 3px solid black;
+  box-shadow: 6px 6px 0 black;
+}
+
+.subtitle {
   text-align: center;
+  margin-bottom: 30px;
 }
 
-#booth {
-  max-width: 350px;
-  margin: auto;
+section {
+  border: 2px dashed black;
+  padding: 15px;
+  margin-bottom: 20px;
 }
 
-video {
-  width: 100%;
-  border: 3px solid black;
-  background: white;
-}
-
-#countdown {
-  font-size: 48px;
-  margin: 15px;
-}
-
-button {
-  padding: 10px 20px;
-  font-size: 18px;
+.btn {
+  display: inline-block;
+  padding: 10px 15px;
   border: 2px solid black;
-  background: white;
-  cursor: pointer;
-}
-
-canvas {
-  margin-top: 20px;
-  border: 3px solid black;
+  text-decoration: none;
+  color: black;
   background: white;
 }

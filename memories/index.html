@@ -5,9 +5,22 @@
   <title>Our Photobooth</title>
   <link rel="stylesheet" href="booth.css" />
   <style>
-    /* MIRROR THE PREVIEW */
-    #video {
-      transform: scaleX(-1);
+    #video { transform: scaleX(-1); }
+
+    #colors div {
+      margin: 4px;
+      display: inline-block;
+    }
+
+    #stickers img {
+      width: 50px;
+      cursor: pointer;
+      margin: 6px;
+    }
+
+    #sizeControl {
+      width: 200px;
+      margin-top: 10px;
     }
   </style>
 </head>
@@ -29,6 +42,9 @@
 
   <h3>Stickers</h3>
   <div id="stickers"></div>
+
+  <h3>Sticker Size</h3>
+  <input id="sizeControl" type="range" min="40" max="200" value="80" />
 
   <script src="booth.js"></script>
 </body>

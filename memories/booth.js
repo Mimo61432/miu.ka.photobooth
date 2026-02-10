@@ -1,215 +1,152 @@
-// =======================
-// ELEMENTS
-// =======================
 const video = document.getElementById("video");
 const startBtn = document.getElementById("startBtn");
 const countdownEl = document.getElementById("countdown");
-const stripCanvas = document.getElementById("strip");
-const stripCtx = stripCanvas.getContext("2d");
-const colorBox = document.getElementById("colors");
-const stickerBox = document.getElementById("stickers");
-const sizeControl = document.getElementById("sizeControl");
+const canvas = document.getElementById("strip");
+const ctx = canvas.getContext("2d");
+const stickersDiv = document.getElementById("stickers");
+const downloadBtn = document.getElementById("downloadBtn");
 
-// =======================
-// CONFIG
-// =======================
-const PHOTO_WIDTH = 260;
-const PHOTO_HEIGHT = 260;
-const PHOTO_PADDING = 20;
-const CORNER_RADIUS = 22;
+// mirror preview
+video.style.transform = "scaleX(-1)";
 
-// =======================
-// STATE
-// =======================
-let photos = [];
-let frameColor = "#fffd74";
-let stickers = [];
-let activeSticker = null;
-let dragging = null;
-let offsetX = 0;
-let offsetY = 0;
-
-// =======================
-// CAMERA
-// =======================
+// camera
 navigator.mediaDevices.getUserMedia({ video: true }).then(stream => {
   video.srcObject = stream;
 });
 
-// =======================
-// START
-// =======================
-startBtn.onclick = async () => {
-  photos = [];
-  stickers = [];
-  activeSticker = null;
+// sticker files (CASE SENSITIVE)
+const STICKERS = [
+  "awesomekitty.PNG",
+  "brownteddy.PNG",
+  "cherries.PNG",
+  "flowerenvelope.PNG",
+  "headphone.PNG",
+  "huggingkitty.PNG",
+  "kittywithtears.PNG",
+  "matcha.PNG",
+  "pinkteddy.PNG",
+  "pinkteddywithcross.PNG",
+  "redjasmine.PNG",
+  "redmushroom.PNG",
+  "strawberry.PNG",
+  "tulip.PNG",
+  "whitebunny.PNG",
+  "yellowjasmine.PNG"
+];
+
+let photoStrip = null;
+let placedStickers = [];
+let activeSticker = null;
+let offsetX = 0;
+let offsetY = 0;
+
+// build sticker tray
+STICKERS.forEach(name => {
+  const img = document.createElement("img");
+  img.src = "stickers/" + name;
+  img.className = "sticker-thumb";
+  img.onclick = () => addSticker(img.src);
+  stickersDiv.appendChild(img);
+});
+
+function addSticker(src) {
+  const img = new Image();
+  img.src = src;
+  const sticker = {
+    img,
+    x: 150,
+    y: 150,
+    size: 100
+  };
+  placedStickers.push(sticker);
   redraw();
+}
+
+// capture photos
+startBtn.onclick = async () => {
+  photoStrip = document.createElement("canvas");
+  photoStrip.width = 400;
+  photoStrip.height = 1200;
+  const pctx = photoStrip.getContext("2d");
 
   for (let i = 0; i < 4; i++) {
     await countdown();
-    capture(i);
+    pctx.save();
+    pctx.scale(-1, 1);
+    pctx.drawImage(video, -400, i * 300, 400, 300);
+    pctx.restore();
   }
+
+  redraw();
 };
 
-// =======================
-// COUNTDOWN
-// =======================
 function countdown() {
   return new Promise(resolve => {
     let t = 3;
     countdownEl.textContent = t;
-
-    const timer = setInterval(() => {
+    const i = setInterval(() => {
       t--;
+      countdownEl.textContent = t;
       if (t === 0) {
-        clearInterval(timer);
+        clearInterval(i);
         countdownEl.textContent = "";
         resolve();
-      } else {
-        countdownEl.textContent = t;
       }
     }, 1000);
   });
 }
 
-// =======================
-// CAPTURE (MIRRORED)
-// =======================
-function capture(i) {
-  const temp = document.createElement("canvas");
-  temp.width = video.videoWidth;
-  temp.height = video.videoHeight;
-
-  const ctx = temp.getContext("2d");
-  ctx.translate(temp.width, 0);
-  ctx.scale(-1, 1);
-  ctx.drawImage(video, 0, 0);
-
-  photos[i] = temp;
-  redraw();
-}
-
-// =======================
-// ROUNDED IMAGE
-// =======================
-function drawRounded(ctx, img, x, y, w, h, r) {
-  ctx.save();
-  ctx.beginPath();
-  ctx.moveTo(x + r, y);
-  ctx.lineTo(x + w - r, y);
-  ctx.quadraticCurveTo(x + w, y, x + w, y + r);
-  ctx.lineTo(x + w, y + h - r);
-  ctx.quadraticCurveTo(x + w, y + h, x + w - r, y + h);
-  ctx.lineTo(x + r, y + h);
-  ctx.quadraticCurveTo(x, y + h, x, y + h - r);
-  ctx.lineTo(x, y + r);
-  ctx.quadraticCurveTo(x, y, x + r, y);
-  ctx.closePath();
-  ctx.clip();
-  ctx.drawImage(img, x, y, w, h);
-  ctx.restore();
-}
-
-// =======================
-// REDRAW
-// =======================
+// redraw canvas
 function redraw() {
-  stripCtx.fillStyle = frameColor;
-  stripCtx.fillRect(0, 0, stripCanvas.width, stripCanvas.height);
-
-  photos.forEach((p, i) => {
-    const x = (stripCanvas.width - PHOTO_WIDTH) / 2;
-    const y = i * (PHOTO_HEIGHT + PHOTO_PADDING * 2) + PHOTO_PADDING;
-    drawRounded(stripCtx, p, x, y, PHOTO_WIDTH, PHOTO_HEIGHT, CORNER_RADIUS);
-  });
-
-  stickers.forEach(s => {
-    stripCtx.drawImage(s.img, s.x, s.y, s.size, s.size);
+  ctx.clearRect(0, 0, canvas.width, canvas.height);
+  if (photoStrip) ctx.drawImage(photoStrip, 0, 0);
+  placedStickers.forEach(s => {
+    ctx.drawImage(s.img, s.x, s.y, s.size, s.size);
   });
 }
 
-// =======================
-// FRAME COLORS
-// =======================
-[
-  "#B0E0E6","#77DD77","#fffd74","#F5F5DC",
-  "#D2042D","#800000","#964B00","#C27E79",
-  "#F4C2C2","#E6E6FA","#FFE5B4","#000000"
-].forEach(c => {
-  const d = document.createElement("div");
-  d.style.background = c;
-  d.style.width = "30px";
-  d.style.height = "30px";
-  d.style.borderRadius = "50%";
-  d.style.cursor = "pointer";
-  d.onclick = () => {
-    frameColor = c;
-    redraw();
-  };
-  colorBox.appendChild(d);
-});
+// mouse drag logic
+canvas.addEventListener("mousedown", e => {
+  const rect = canvas.getBoundingClientRect();
+  const mx = e.clientX - rect.left;
+  const my = e.clientY - rect.top;
 
-// =======================
-// STICKERS
-// =======================
-["bear.png","bunny.png","heart.png","kiss.png"].forEach(file => {
-  const img = document.createElement("img");
-  img.src = "stickers/" + file;
-  img.onclick = () => placeSticker(img.src);
-  stickerBox.appendChild(img);
-});
-
-function placeSticker(src) {
-  const img = new Image();
-  img.src = src;
-  img.onload = () => {
-    const s = { img, x: 120, y: 120, size: 80 };
-    stickers.push(s);
-    setActiveSticker(s);
-    redraw();
-  };
-}
-
-// =======================
-// ACTIVE STICKER SIZE
-// =======================
-sizeControl.oninput = () => {
-  if (!activeSticker) return;
-  activeSticker.size = Number(sizeControl.value);
-  redraw();
-};
-
-function setActiveSticker(s) {
-  activeSticker = s;
-  sizeControl.value = s.size;
-}
-
-// =======================
-// DRAG STICKERS
-// =======================
-stripCanvas.addEventListener("mousedown", e => {
-  const r = stripCanvas.getBoundingClientRect();
-  const x = e.clientX - r.left;
-  const y = e.clientY - r.top;
-
-  for (let i = stickers.length - 1; i >= 0; i--) {
-    const s = stickers[i];
-    if (x >= s.x && x <= s.x + s.size && y >= s.y && y <= s.y + s.size) {
-      dragging = s;
-      setActiveSticker(s);
-      offsetX = x - s.x;
-      offsetY = y - s.y;
-      break;
+  for (let i = placedStickers.length - 1; i >= 0; i--) {
+    const s = placedStickers[i];
+    if (
+      mx > s.x &&
+      mx < s.x + s.size &&
+      my > s.y &&
+      my < s.y + s.size
+    ) {
+      activeSticker = s;
+      offsetX = mx - s.x;
+      offsetY = my - s.y;
+      return;
     }
   }
 });
 
-stripCanvas.addEventListener("mousemove", e => {
-  if (!dragging) return;
-  const r = stripCanvas.getBoundingClientRect();
-  dragging.x = e.clientX - r.left - offsetX;
-  dragging.y = e.clientY - r.top - offsetY;
+canvas.addEventListener("mousemove", e => {
+  if (!activeSticker) return;
+  const rect = canvas.getBoundingClientRect();
+  activeSticker.x = e.clientX - rect.left - offsetX;
+  activeSticker.y = e.clientY - rect.top - offsetY;
   redraw();
 });
 
-stripCanvas.addEventListener("mouseup", () => dragging = null);
+canvas.addEventListener("mouseup", () => {
+  activeSticker = null;
+});
+
+canvas.addEventListener("mouseleave", () => {
+  activeSticker = null;
+});
+
+// download
+downloadBtn.onclick = () => {
+  const link = document.createElement("a");
+  link.download = "our_photobooth.png";
+  link.href = canvas.toDataURL();
+  link.click();
+};

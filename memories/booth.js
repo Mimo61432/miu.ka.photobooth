@@ -14,7 +14,7 @@ navigator.mediaDevices.getUserMedia({ video: true }).then(stream => {
   video.srcObject = stream;
 });
 
-// sticker files (CASE SENSITIVE)
+// stickers (CASE SENSITIVE)
 const STICKERS = [
   "awesomekitty.PNG",
   "brownteddy.PNG",
@@ -37,6 +37,7 @@ const STICKERS = [
 let photoStrip = null;
 let placedStickers = [];
 let activeSticker = null;
+let hoverSticker = null;
 let offsetX = 0;
 let offsetY = 0;
 
@@ -52,13 +53,12 @@ STICKERS.forEach(name => {
 function addSticker(src) {
   const img = new Image();
   img.src = src;
-  const sticker = {
+  placedStickers.push({
     img,
     x: 150,
     y: 150,
     size: 100
-  };
-  placedStickers.push(sticker);
+  });
   redraw();
 }
 
@@ -96,7 +96,7 @@ function countdown() {
   });
 }
 
-// redraw canvas
+// redraw
 function redraw() {
   ctx.clearRect(0, 0, canvas.width, canvas.height);
   if (photoStrip) ctx.drawImage(photoStrip, 0, 0);
@@ -105,48 +105,62 @@ function redraw() {
   });
 }
 
-// mouse drag logic
-canvas.addEventListener("mousedown", e => {
-  const rect = canvas.getBoundingClientRect();
-  const mx = e.clientX - rect.left;
-  const my = e.clientY - rect.top;
-
+// detect sticker under mouse
+function getStickerAt(x, y) {
   for (let i = placedStickers.length - 1; i >= 0; i--) {
     const s = placedStickers[i];
-    if (
-      mx > s.x &&
-      mx < s.x + s.size &&
-      my > s.y &&
-      my < s.y + s.size
-    ) {
-      activeSticker = s;
-      offsetX = mx - s.x;
-      offsetY = my - s.y;
-      return;
+    if (x > s.x && x < s.x + s.size && y > s.y && y < s.y + s.size) {
+      return s;
     }
+  }
+  return null;
+}
+
+// drag
+canvas.addEventListener("mousedown", e => {
+  const r = canvas.getBoundingClientRect();
+  const x = e.clientX - r.left;
+  const y = e.clientY - r.top;
+
+  const s = getStickerAt(x, y);
+  if (s) {
+    activeSticker = s;
+    offsetX = x - s.x;
+    offsetY = y - s.y;
   }
 });
 
 canvas.addEventListener("mousemove", e => {
-  if (!activeSticker) return;
-  const rect = canvas.getBoundingClientRect();
-  activeSticker.x = e.clientX - rect.left - offsetX;
-  activeSticker.y = e.clientY - rect.top - offsetY;
+  const r = canvas.getBoundingClientRect();
+  const x = e.clientX - r.left;
+  const y = e.clientY - r.top;
+
+  hoverSticker = getStickerAt(x, y);
+
+  if (activeSticker) {
+    activeSticker.x = x - offsetX;
+    activeSticker.y = y - offsetY;
+    redraw();
+  }
+});
+
+canvas.addEventListener("mouseup", () => activeSticker = null);
+canvas.addEventListener("mouseleave", () => activeSticker = null);
+
+// resize with scroll
+canvas.addEventListener("wheel", e => {
+  if (!hoverSticker) return;
+  e.preventDefault();
+
+  hoverSticker.size += e.deltaY < 0 ? 10 : -10;
+  hoverSticker.size = Math.max(40, Math.min(300, hoverSticker.size));
   redraw();
-});
-
-canvas.addEventListener("mouseup", () => {
-  activeSticker = null;
-});
-
-canvas.addEventListener("mouseleave", () => {
-  activeSticker = null;
 });
 
 // download
 downloadBtn.onclick = () => {
-  const link = document.createElement("a");
-  link.download = "our_photobooth.png";
-  link.href = canvas.toDataURL();
-  link.click();
+  const a = document.createElement("a");
+  a.download = "our_photobooth.png";
+  a.href = canvas.toDataURL();
+  a.click();
 };

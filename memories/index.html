@@ -1,22 +1,29 @@
 <!DOCTYPE html>
 <html lang="en">
 <head>
-  <meta charset="UTF-8">
+  <meta charset="UTF-8" />
   <title>Our Photobooth</title>
-  <link rel="stylesheet" href="booth.css">
+  <link rel="stylesheet" href="booth.css" />
 </head>
 <body>
 
-<h1>📸 Our Photobooth</h1>
-<p id="status">Align your face to eye level</p>
+  <h1>📸 Our Photobooth</h1>
+  <p>Align your face to eye level</p>
 
-<div id="booth">
   <video id="video" autoplay playsinline></video>
-  <div id="countdown"></div>
-  <button id="startBtn">Start</button>
-  <canvas id="strip" width="300" height="1200"></canvas>
-</div>
 
-<script src="booth.js"></script>
+  <div id="countdown"></div>
+
+  <button id="startBtn">Start</button>
+
+  <canvas id="strip" width="320" height="1200"></canvas>
+
+  <h3>Choose Frame Color</h3>
+  <div id="colors"></div>
+
+  <h3>Stickers</h3>
+  <div id="stickers"></div>
+
+  <script src="booth.js"></script>
 </body>
 </html>

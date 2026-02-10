@@ -1,40 +1,46 @@
 // =======================
-// BASIC SETUP
+// ELEMENTS
 // =======================
 const video = document.getElementById("video");
 const startBtn = document.getElementById("startBtn");
 const countdownEl = document.getElementById("countdown");
 const stripCanvas = document.getElementById("strip");
 const stripCtx = stripCanvas.getContext("2d");
+const colorBox = document.getElementById("colors");
+const stickerBox = document.getElementById("stickers");
 
 // =======================
-// GLOBAL STATE
+// CONFIG
+// =======================
+const PHOTO_WIDTH = 260;
+const PHOTO_HEIGHT = 260;
+const PHOTO_PADDING = 20;
+const CORNER_RADIUS = 22;
+
+// =======================
+// STATE
 // =======================
 let photos = [];
-let frameColor = "#fffd74"; // butter yellow default
-
-let placedStickers = [];
-let draggingSticker = null;
+let frameColor = "#fffd74";
+let stickers = [];
+let dragging = null;
 let offsetX = 0;
 let offsetY = 0;
 
 // =======================
-// CAMERA ACCESS
+// CAMERA
 // =======================
-navigator.mediaDevices
-  .getUserMedia({ video: true })
-  .then(stream => {
-    video.srcObject = stream;
-  });
+navigator.mediaDevices.getUserMedia({ video: true }).then(stream => {
+  video.srcObject = stream;
+});
 
 // =======================
-// START PHOTOBOOTH
+// START
 // =======================
 startBtn.onclick = async () => {
   photos = [];
-  placedStickers = [];
-
-  stripCtx.clearRect(0, 0, stripCanvas.width, stripCanvas.height);
+  stickers = [];
+  redraw();
 
   for (let i = 0; i < 4; i++) {
     await countdown();
@@ -64,106 +70,118 @@ function countdown() {
 }
 
 // =======================
-// CAPTURE PHOTO
+// CAPTURE
 // =======================
 function capture(i) {
   const temp = document.createElement("canvas");
   temp.width = video.videoWidth;
   temp.height = video.videoHeight;
-
-  const ctx = temp.getContext("2d");
-  ctx.drawImage(video, 0, 0);
-
+  temp.getContext("2d").drawImage(video, 0, 0);
   photos[i] = temp;
-  redrawStrip();
+  redraw();
 }
 
 // =======================
-// REDRAW EVERYTHING
+// ROUNDED IMAGE
 // =======================
-function redrawStrip() {
-  // frame background
+function drawRounded(ctx, img, x, y, w, h, r) {
+  ctx.save();
+  ctx.beginPath();
+  ctx.moveTo(x + r, y);
+  ctx.lineTo(x + w - r, y);
+  ctx.quadraticCurveTo(x + w, y, x + w, y + r);
+  ctx.lineTo(x + w, y + h - r);
+  ctx.quadraticCurveTo(x + w, y + h, x + w - r, y + h);
+  ctx.lineTo(x + r, y + h);
+  ctx.quadraticCurveTo(x, y + h, x, y + h - r);
+  ctx.lineTo(x, y + r);
+  ctx.quadraticCurveTo(x, y, x + r, y);
+  ctx.closePath();
+  ctx.clip();
+  ctx.drawImage(img, x, y, w, h);
+  ctx.restore();
+}
+
+// =======================
+// REDRAW
+// =======================
+function redraw() {
   stripCtx.fillStyle = frameColor;
   stripCtx.fillRect(0, 0, stripCanvas.width, stripCanvas.height);
 
-  // photos
   photos.forEach((p, i) => {
-    stripCtx.drawImage(
+    const x = (stripCanvas.width - PHOTO_WIDTH) / 2;
+    const y = i * (PHOTO_HEIGHT + PHOTO_PADDING * 2) + PHOTO_PADDING;
+
+    drawRounded(
+      stripCtx,
       p,
-      0,
-      i * 300,
-      stripCanvas.width,
-      300
+      x,
+      y,
+      PHOTO_WIDTH,
+      PHOTO_HEIGHT,
+      CORNER_RADIUS
     );
   });
 
-  // stickers
-  placedStickers.forEach(s => {
-    stripCtx.drawImage(
-      s.img,
-      s.x,
-      s.y,
-      s.size,
-      s.size
-    );
+  stickers.forEach(s => {
+    stripCtx.drawImage(s.img, s.x, s.y, s.size, s.size);
   });
 }
+
+// =======================
+// FRAME COLORS
+// =======================
+[
+  "#B0E0E6", "#77DD77", "#fffd74", "#F5F5DC",
+  "#D2042D", "#800000", "#964B00", "#C27E79",
+  "#F4C2C2", "#E6E6FA", "#FFE5B4", "#000000"
+].forEach(c => {
+  const d = document.createElement("div");
+  d.style.background = c;
+  d.style.width = "30px";
+  d.style.height = "30px";
+  d.style.borderRadius = "50%";
+  d.style.cursor = "pointer";
+  d.onclick = () => {
+    frameColor = c;
+    redraw();
+  };
+  colorBox.appendChild(d);
+});
 
 // =======================
 // STICKERS
 // =======================
-const stickerFiles = [
-  "bear.png",
-  "bunny.png",
-  "heart.png",
-  "kiss.png",
-  "flower.png",
-  "drink.png"
-];
-
-const stickerBox = document.getElementById("stickers");
-
-stickerFiles.forEach(file => {
+["bear.png","bunny.png","heart.png","kiss.png"].forEach(file => {
   const img = document.createElement("img");
   img.src = "stickers/" + file;
   img.className = "sticker";
-
-  img.onclick = () => addSticker(img.src);
+  img.onclick = () => placeSticker(img.src);
   stickerBox.appendChild(img);
 });
 
-function addSticker(src) {
+function placeSticker(src) {
   const img = new Image();
   img.src = src;
-
   img.onload = () => {
-    placedStickers.push({
-      img,
-      x: 100,
-      y: 100,
-      size: 80
-    });
-    redrawStrip();
+    stickers.push({ img, x: 120, y: 120, size: 80 });
+    redraw();
   };
 }
 
 // =======================
-// DRAG STICKERS (MOUSE)
+// DRAG STICKERS
 // =======================
 stripCanvas.addEventListener("mousedown", e => {
-  const rect = stripCanvas.getBoundingClientRect();
-  const x = e.clientX - rect.left;
-  const y = e.clientY - rect.top;
+  const r = stripCanvas.getBoundingClientRect();
+  const x = e.clientX - r.left;
+  const y = e.clientY - r.top;
 
-  for (let i = placedStickers.length - 1; i >= 0; i--) {
-    const s = placedStickers[i];
-    if (
-      x >= s.x &&
-      x <= s.x + s.size &&
-      y >= s.y &&
-      y <= s.y + s.size
-    ) {
-      draggingSticker = s;
+  for (let i = stickers.length - 1; i >= 0; i--) {
+    const s = stickers[i];
+    if (x >= s.x && x <= s.x + s.size && y >= s.y && y <= s.y + s.size) {
+      dragging = s;
       offsetX = x - s.x;
       offsetY = y - s.y;
       break;
@@ -172,59 +190,11 @@ stripCanvas.addEventListener("mousedown", e => {
 });
 
 stripCanvas.addEventListener("mousemove", e => {
-  if (!draggingSticker) return;
-
-  const rect = stripCanvas.getBoundingClientRect();
-  const x = e.clientX - rect.left;
-  const y = e.clientY - rect.top;
-
-  draggingSticker.x = x - offsetX;
-  draggingSticker.y = y - offsetY;
-  redrawStrip();
+  if (!dragging) return;
+  const r = stripCanvas.getBoundingClientRect();
+  dragging.x = e.clientX - r.left - offsetX;
+  dragging.y = e.clientY - r.top - offsetY;
+  redraw();
 });
 
-stripCanvas.addEventListener("mouseup", () => {
-  draggingSticker = null;
-});
-
-// =======================
-// TOUCH SUPPORT (MOBILE)
-// =======================
-stripCanvas.addEventListener("touchstart", e => {
-  const rect = stripCanvas.getBoundingClientRect();
-  const touch = e.touches[0];
-  const x = touch.clientX - rect.left;
-  const y = touch.clientY - rect.top;
-
-  for (let i = placedStickers.length - 1; i >= 0; i--) {
-    const s = placedStickers[i];
-    if (
-      x >= s.x &&
-      x <= s.x + s.size &&
-      y >= s.y &&
-      y <= s.y + s.size
-    ) {
-      draggingSticker = s;
-      offsetX = x - s.x;
-      offsetY = y - s.y;
-      break;
-    }
-  }
-});
-
-stripCanvas.addEventListener("touchmove", e => {
-  if (!draggingSticker) return;
-
-  const rect = stripCanvas.getBoundingClientRect();
-  const touch = e.touches[0];
-  const x = touch.clientX - rect.left;
-  const y = touch.clientY - rect.top;
-
-  draggingSticker.x = x - offsetX;
-  draggingSticker.y = y - offsetY;
-  redrawStrip();
-});
-
-stripCanvas.addEventListener("touchend", () => {
-  draggingSticker = null;
-});
+stripCanvas.addEventListener("mouseup", () => dragging = null);

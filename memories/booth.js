@@ -70,13 +70,20 @@ function countdown() {
 }
 
 // =======================
-// CAPTURE
+// CAPTURE (MIRRORED)
 // =======================
 function capture(i) {
   const temp = document.createElement("canvas");
   temp.width = video.videoWidth;
   temp.height = video.videoHeight;
-  temp.getContext("2d").drawImage(video, 0, 0);
+
+  const ctx = temp.getContext("2d");
+
+  // MIRROR CAPTURE
+  ctx.translate(temp.width, 0);
+  ctx.scale(-1, 1);
+  ctx.drawImage(video, 0, 0);
+
   photos[i] = temp;
   redraw();
 }
@@ -113,15 +120,7 @@ function redraw() {
     const x = (stripCanvas.width - PHOTO_WIDTH) / 2;
     const y = i * (PHOTO_HEIGHT + PHOTO_PADDING * 2) + PHOTO_PADDING;
 
-    drawRounded(
-      stripCtx,
-      p,
-      x,
-      y,
-      PHOTO_WIDTH,
-      PHOTO_HEIGHT,
-      CORNER_RADIUS
-    );
+    drawRounded(stripCtx, p, x, y, PHOTO_WIDTH, PHOTO_HEIGHT, CORNER_RADIUS);
   });
 
   stickers.forEach(s => {

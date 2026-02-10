@@ -5,46 +5,58 @@
   <title>Our Photobooth</title>
   <link rel="stylesheet" href="booth.css" />
   <style>
-    #video { transform: scaleX(-1); }
-
-    #colors div {
-      margin: 4px;
-      display: inline-block;
+    body {
+      font-family: sans-serif;
+      background: #f6efe8;
+      text-align: center;
     }
 
-    #stickers img {
+    video {
+      width: 260px;
+      border-radius: 20px;
+      margin-bottom: 10px;
+    }
+
+    canvas {
+      border-radius: 24px;
+      margin-top: 15px;
+    }
+
+    .controls {
+      margin: 10px 0;
+    }
+
+    #stickers {
+      display: flex;
+      gap: 8px;
+      justify-content: center;
+      flex-wrap: wrap;
+      margin-top: 10px;
+    }
+
+    .sticker-thumb {
       width: 50px;
       cursor: pointer;
-      margin: 6px;
-    }
-
-    #sizeControl {
-      width: 200px;
-      margin-top: 10px;
     }
   </style>
 </head>
+
 <body>
 
-  <h1>📸 Our Photobooth</h1>
-  <p>Align your face to eye level</p>
+  <h2>📸 Our Photobooth</h2>
+  <p id="countdown"></p>
 
   <video id="video" autoplay playsinline></video>
 
-  <div id="countdown"></div>
+  <div class="controls">
+    <button id="startBtn">Start</button>
+    <input type="color" id="frameColor" value="#fffd74" />
+    <button id="downloadBtn">Download</button>
+  </div>
 
-  <button id="startBtn">Start</button>
+  <canvas id="strip" width="360" height="520"></canvas>
 
-  <canvas id="strip" width="320" height="1200"></canvas>
-
-  <h3>Choose Frame Color</h3>
-  <div id="colors"></div>
-
-  <h3>Stickers</h3>
   <div id="stickers"></div>
-
-  <h3>Sticker Size</h3>
-  <input id="sizeControl" type="range" min="40" max="200" value="80" />
 
   <script src="booth.js"></script>
 </body>

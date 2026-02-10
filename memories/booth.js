@@ -8,6 +8,7 @@ const stripCanvas = document.getElementById("strip");
 const stripCtx = stripCanvas.getContext("2d");
 const colorBox = document.getElementById("colors");
 const stickerBox = document.getElementById("stickers");
+const sizeControl = document.getElementById("sizeControl");
 
 // =======================
 // CONFIG
@@ -23,6 +24,7 @@ const CORNER_RADIUS = 22;
 let photos = [];
 let frameColor = "#fffd74";
 let stickers = [];
+let activeSticker = null;
 let dragging = null;
 let offsetX = 0;
 let offsetY = 0;
@@ -40,6 +42,7 @@ navigator.mediaDevices.getUserMedia({ video: true }).then(stream => {
 startBtn.onclick = async () => {
   photos = [];
   stickers = [];
+  activeSticker = null;
   redraw();
 
   for (let i = 0; i < 4; i++) {
@@ -78,8 +81,6 @@ function capture(i) {
   temp.height = video.videoHeight;
 
   const ctx = temp.getContext("2d");
-
-  // MIRROR CAPTURE
   ctx.translate(temp.width, 0);
   ctx.scale(-1, 1);
   ctx.drawImage(video, 0, 0);
@@ -119,7 +120,6 @@ function redraw() {
   photos.forEach((p, i) => {
     const x = (stripCanvas.width - PHOTO_WIDTH) / 2;
     const y = i * (PHOTO_HEIGHT + PHOTO_PADDING * 2) + PHOTO_PADDING;
-
     drawRounded(stripCtx, p, x, y, PHOTO_WIDTH, PHOTO_HEIGHT, CORNER_RADIUS);
   });
 
@@ -132,9 +132,9 @@ function redraw() {
 // FRAME COLORS
 // =======================
 [
-  "#B0E0E6", "#77DD77", "#fffd74", "#F5F5DC",
-  "#D2042D", "#800000", "#964B00", "#C27E79",
-  "#F4C2C2", "#E6E6FA", "#FFE5B4", "#000000"
+  "#B0E0E6","#77DD77","#fffd74","#F5F5DC",
+  "#D2042D","#800000","#964B00","#C27E79",
+  "#F4C2C2","#E6E6FA","#FFE5B4","#000000"
 ].forEach(c => {
   const d = document.createElement("div");
   d.style.background = c;
@@ -155,7 +155,6 @@ function redraw() {
 ["bear.png","bunny.png","heart.png","kiss.png"].forEach(file => {
   const img = document.createElement("img");
   img.src = "stickers/" + file;
-  img.className = "sticker";
   img.onclick = () => placeSticker(img.src);
   stickerBox.appendChild(img);
 });
@@ -164,9 +163,25 @@ function placeSticker(src) {
   const img = new Image();
   img.src = src;
   img.onload = () => {
-    stickers.push({ img, x: 120, y: 120, size: 80 });
+    const s = { img, x: 120, y: 120, size: 80 };
+    stickers.push(s);
+    setActiveSticker(s);
     redraw();
   };
+}
+
+// =======================
+// ACTIVE STICKER SIZE
+// =======================
+sizeControl.oninput = () => {
+  if (!activeSticker) return;
+  activeSticker.size = Number(sizeControl.value);
+  redraw();
+};
+
+function setActiveSticker(s) {
+  activeSticker = s;
+  sizeControl.value = s.size;
 }
 
 // =======================
@@ -181,6 +196,7 @@ stripCanvas.addEventListener("mousedown", e => {
     const s = stickers[i];
     if (x >= s.x && x <= s.x + s.size && y >= s.y && y <= s.y + s.size) {
       dragging = s;
+      setActiveSticker(s);
       offsetX = x - s.x;
       offsetY = y - s.y;
       break;

@@ -5,6 +5,7 @@ const canvas = document.getElementById("strip");
 const ctx = canvas.getContext("2d");
 const stickersDiv = document.getElementById("stickers");
 const downloadBtn = document.getElementById("downloadBtn");
+const frameColorInput = document.getElementById("frameColor");
 
 // mirror preview
 video.style.transform = "scaleX(-1)";
@@ -34,12 +35,13 @@ const STICKERS = [
   "yellowjasmine.PNG"
 ];
 
-let photoStrip = null;
+let photoStrip = [];
 let placedStickers = [];
 let activeSticker = null;
 let hoverSticker = null;
 let offsetX = 0;
 let offsetY = 0;
+let frameColor = frameColorInput.value;
 
 // build sticker tray
 STICKERS.forEach(name => {
@@ -50,31 +52,35 @@ STICKERS.forEach(name => {
   stickersDiv.appendChild(img);
 });
 
+frameColorInput.oninput = e => {
+  frameColor = e.target.value;
+  redraw();
+};
+
 function addSticker(src) {
   const img = new Image();
   img.src = src;
-  placedStickers.push({
-    img,
-    x: 150,
-    y: 150,
-    size: 100
-  });
+  placedStickers.push({ img, x: 140, y: 220, size: 80 });
   redraw();
 }
 
-// capture photos
+// start photobooth
 startBtn.onclick = async () => {
-  photoStrip = document.createElement("canvas");
-  photoStrip.width = 400;
-  photoStrip.height = 1200;
-  const pctx = photoStrip.getContext("2d");
+  photoStrip = [];
 
-  for (let i = 0; i < 4; i++) {
+  for (let i = 0; i < 2; i++) {
     await countdown();
-    pctx.save();
-    pctx.scale(-1, 1);
-    pctx.drawImage(video, -400, i * 300, 400, 300);
-    pctx.restore();
+    const temp = document.createElement("canvas");
+    temp.width = 260;
+    temp.height = 200;
+    const tctx = temp.getContext("2d");
+
+    tctx.save();
+    tctx.scale(-1, 1);
+    tctx.drawImage(video, -260, 0, 260, 200);
+    tctx.restore();
+
+    photoStrip.push(temp);
   }
 
   redraw();
@@ -96,16 +102,45 @@ function countdown() {
   });
 }
 
-// redraw
+// draw rounded photo
+function drawRoundedImage(img, x, y, w, h, r) {
+  ctx.beginPath();
+  ctx.moveTo(x + r, y);
+  ctx.lineTo(x + w - r, y);
+  ctx.quadraticCurveTo(x + w, y, x + w, y + r);
+  ctx.lineTo(x + w, y + h - r);
+  ctx.quadraticCurveTo(x + w, y + h, x + w - r, y + h);
+  ctx.lineTo(x + r, y + h);
+  ctx.quadraticCurveTo(x, y + h, x, y + h - r);
+  ctx.lineTo(x, y + r);
+  ctx.quadraticCurveTo(x, y, x + r, y);
+  ctx.closePath();
+  ctx.clip();
+  ctx.drawImage(img, x, y, w, h);
+}
+
+// redraw everything
 function redraw() {
   ctx.clearRect(0, 0, canvas.width, canvas.height);
-  if (photoStrip) ctx.drawImage(photoStrip, 0, 0);
+
+  let y = 20;
+  photoStrip.forEach(photo => {
+    ctx.fillStyle = frameColor;
+    ctx.fillRect(40, y - 6, 280, 212);
+
+    ctx.save();
+    drawRoundedImage(photo, 50, y, 260, 200, 20);
+    ctx.restore();
+
+    y += 240;
+  });
+
   placedStickers.forEach(s => {
     ctx.drawImage(s.img, s.x, s.y, s.size, s.size);
   });
 }
 
-// detect sticker under mouse
+// helpers
 function getStickerAt(x, y) {
   for (let i = placedStickers.length - 1; i >= 0; i--) {
     const s = placedStickers[i];
@@ -121,7 +156,6 @@ canvas.addEventListener("mousedown", e => {
   const r = canvas.getBoundingClientRect();
   const x = e.clientX - r.left;
   const y = e.clientY - r.top;
-
   const s = getStickerAt(x, y);
   if (s) {
     activeSticker = s;
@@ -134,9 +168,7 @@ canvas.addEventListener("mousemove", e => {
   const r = canvas.getBoundingClientRect();
   const x = e.clientX - r.left;
   const y = e.clientY - r.top;
-
   hoverSticker = getStickerAt(x, y);
-
   if (activeSticker) {
     activeSticker.x = x - offsetX;
     activeSticker.y = y - offsetY;
@@ -145,15 +177,13 @@ canvas.addEventListener("mousemove", e => {
 });
 
 canvas.addEventListener("mouseup", () => activeSticker = null);
-canvas.addEventListener("mouseleave", () => activeSticker = null);
 
-// resize with scroll
+// resize
 canvas.addEventListener("wheel", e => {
   if (!hoverSticker) return;
   e.preventDefault();
-
   hoverSticker.size += e.deltaY < 0 ? 10 : -10;
-  hoverSticker.size = Math.max(40, Math.min(300, hoverSticker.size));
+  hoverSticker.size = Math.max(40, Math.min(200, hoverSticker.size));
   redraw();
 });
 
@@ -161,6 +191,6 @@ canvas.addEventListener("wheel", e => {
 downloadBtn.onclick = () => {
   const a = document.createElement("a");
   a.download = "our_photobooth.png";
-  a.href = canvas.toDataURL();
+  a.href = canvas.toDataURL("image/png");
   a.click();
 };
